@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Recruitment Form</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+      :root { --primary: #4a90e2; --bg: #f4f7f6; --glass: rgba(255, 255, 255, 0.95); }
+      body { font-family: 'Poppins', sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+      
+      /* --- Welcome Screen --- */
+      #welcome-screen { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; animation: fadeIn 1s ease; }
+      .input-lg { padding: 15px; font-size: 1.2rem; border: 2px solid var(--primary); border-radius: 50px; outline: none; text-align: center; width: 300px; margin-top: 20px; }
+      .btn-start { background: var(--primary); color: white; padding: 12px 40px; border-radius: 50px; border: none; font-size: 1rem; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+      .btn-start:hover { transform: scale(1.05); }
+
+      /* --- Main Form --- */
+      #main-form-container { display: none; max-width: 800px; margin: 0 auto; background: var(--glass); padding: 40px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+      h2 { color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; }
+      .section { margin-bottom: 30px; animation: slideUp 0.6s ease; }
+      label { display: block; font-weight: 600; margin: 10px 0 5px; font-size: 0.9rem; }
+      input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+      
+      /* Table */
+      table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+      th { background: var(--primary); color: white; }
+      
+      /* --- Print Layout --- */
+      #print-layout { display: none; background: white; width: 210mm; min-height: 297mm; padding: 10mm; margin: 0 auto; box-sizing: border-box; }
+      .print-header { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 10px; }
+      .passport-photo { width: 35mm; height: 45mm; border: 1px solid #000; object-fit: cover; }
+      .print-section { margin-bottom: 15px; }
+      .print-label { font-weight: bold; width: 150px; display: inline-block; }
+      .print-value { border-bottom: 1px dotted #999; display: inline-block; width: calc(100% - 160px); }
+      .qr-container { display: flex; justify-content: space-around; margin-top: 30px; border-top: 1px solid #ccc; padding-top: 10px; }
+      .qr-box { text-align: center; font-size: 0.8rem; }
+      .qr-code-img { width: 80px; height: 80px; }
+      .declaration-box { margin-top: 40px; border: 1px solid #000; padding: 10px; font-size: 0.9rem; }
+      
+      /* Actions */
+      #action-bar { display: none; text-align: center; padding: 20px; background: white; position: fixed; bottom: 0; left: 0; width: 100%; box-shadow: 0 -5px 20px rgba(0,0,0,0.1); }
+      .btn-print { background: #27ae60; color: white; padding: 10px 30px; border: none; border-radius: 5px; cursor: pointer; opacity: 0.5; pointer-events: none; }
+      .btn-print.active { opacity: 1; pointer-events: auto; }
+
+      /* Loader */
+      #loader { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 1000; justify-content: center; align-items: center; flex-direction: column;}
+      .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+      @media print {
+        @page { size: A4; margin: 0; }
+        body { background: white; padding: 0; }
+        #welcome-screen, #main-form-container, #action-bar, #loader { display: none !important; }
+        #print-layout { display: block !important; box-shadow: none; width: 100%; height: 100%; margin: 0; border: none; }
+        .declaration-controls { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+
+    <div id="welcome-screen">
+      <h1>Hello! 👋</h1>
+      <p>Before we begin, what should I call you?</p>
+      <input type="text" id="user-name-input" class="input-lg" placeholder="Enter your name..." onkeypress="handleEnter(event)">
+      <button class="btn-start" onclick="startForm()">Let's Start</button>
+    </div>
+
+    <div id="main-form-container">
+      <h2 id="greeting-header">Candidate Details</h2>
+      <p style="color: #666; font-size: 0.9rem;">Please fill in the details carefully <span id="user-name-display"></span>.</p>
+      <form id="staffForm" onsubmit="handleFormSubmit(event)">
+        <div class="section">
+          <h3>1. Basic Information</h3>
+          <label>Full Name</label><input type="text" id="fullName" required>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div><label>Father's Name</label><input type="text" id="fatherName" required></div>
+            <div><label>Mother's Name</label><input type="text" id="motherName" required></div>
+          </div>
+          <label>Address</label><textarea id="address" rows="3" required></textarea>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div><label>Phone</label><input type="tel" id="phone" required pattern="[0-9]{10}"></div>
+            <div><label>Email</label><input type="email" id="email" required></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>2. Educational Qualification</h3>
+          <table>
+            <thead><tr><th>Exam Name</th><th>Year</th><th>Board/Univ</th><th>F.M.</th><th>Obt. Marks</th><th>%</th></tr></thead>
+            <tbody id="edu-body"></tbody>
+          </table>
+        </div>
+
+        <div class="section">
+          <h3>3. Document Upload</h3>
+          <label>Passport Photo (JPEG)</label><input type="file" id="filePhoto" accept="image/jpeg" required onchange="processFile(this, 'photoData')">
+          <label>ID Proof (PDF)</label><input type="file" id="fileID" accept="application/pdf" required onchange="processFile(this, 'idData')">
+          <label>Qual Proof (Multi-page PDF)</label><input type="file" id="fileQual" accept="application/pdf" required onchange="processFile(this, 'qualData')">
+        </div>
+
+        <input type="hidden" id="photoData"><input type="hidden" id="idData"><input type="hidden" id="qualData">
+        <button type="submit" class="btn-start" style="width: 100%">Generate Application</button>
+      </form>
+    </div>
+
+    <div id="print-layout">
+      <div class="print-header">
+        <div><h1>APPLICATION FORM</h1><p><strong>Staff Recruitment</strong> | Date: <span id="print-date"></span></p></div>
+        <img id="print-photo-img" class="passport-photo" src="" alt="Photo">
+      </div>
+      <div class="print-section">
+        <h3>Personal Details</h3>
+        <div><span class="print-label">Name:</span> <span class="print-value" id="p-name"></span></div>
+        <div><span class="print-label">Father's Name:</span> <span class="print-value" id="p-father"></span></div>
+        <div><span class="print-label">Mother's Name:</span> <span class="print-value" id="p-mother"></span></div>
+        <div><span class="print-label">Address:</span> <span class="print-value" id="p-address"></span></div>
+        <div><span class="print-label">Contact:</span> <span class="print-value" id="p-contact"></span></div>
+      </div>
+      <div class="print-section">
+        <h3>Educational Qualifications</h3>
+        <table id="print-edu-table">
+          <thead><tr><th>Exam</th><th>Year</th><th>Board</th><th>F.M.</th><th>Obt.</th><th>%</th></tr></thead>
+          <tbody id="p-edu-body"></tbody>
+        </table>
+      </div>
+      <div class="qr-container">
+        <div class="qr-box"><img id="qr-id" class="qr-code-img"><p>ID Proof</p></div>
+        <div class="qr-box"><img id="qr-qual" class="qr-code-img"><p>Qualifications</p></div>
+        <div class="qr-box"><img id="qr-app" class="qr-code-img"><p>Application PDF</p></div>
+      </div>
+      <div class="declaration-box"><strong>Declaration:</strong> I hereby declare that all the information furnished above is true.</div>
+      <div class="declaration-controls" style="margin-top: 20px; text-align: center; background: #ffe; padding: 10px; border: 1px dashed orange;">
+        <input type="checkbox" id="confirm-check" onchange="document.getElementById('final-print-btn').classList.toggle('active', this.checked)">
+        <label for="confirm-check">I have verified that all information above is correct.</label>
+      </div>
+    </div>
+
+    <div id="action-bar"><button id="final-print-btn" class="btn-print" onclick="window.print()">Download / Print Copy</button></div>
+    <div id="loader"><div class="spinner"></div><p>Processing...</p></div>
+
+    <script>
+      // ******************************************************
+      // PASTE YOUR DEPLOYED WEB APP URL HERE
+      const WEBAPP_URL = "PASTE_YOUR_NEW_WEBAPP_URL_HERE"; 
+      // ******************************************************
+
+      let userName = "";
+      function handleEnter(e) { if(e.key === 'Enter') startForm(); }
+      function startForm() {
+        userName = document.getElementById('user-name-input').value;
+        if (!userName) { alert("Please tell me your name first!"); return; }
+        document.getElementById('welcome-screen').style.display = 'none';
+        document.getElementById('main-form-container').style.display = 'block';
+        document.getElementById('user-name-display').innerText = ", " + userName;
+        generateTable();
+      }
+
+      function generateTable() {
+        const exams = ["Secondary", "H.S.", "Graduation", "Post Grad", "B.Ed/Other"];
+        let html = "";
+        exams.forEach((exam, i) => {
+          html += `<tr><td><input type="text" id="exam_${i}" value="${exam}" readonly style="border:none;font-weight:bold;"></td><td><input type="number" id="year_${i}"></td><td><input type="text" id="board_${i}"></td><td><input type="number" id="fm_${i}"></td><td><input type="number" id="obt_${i}" oninput="calcPerc(${i})"></td><td><input type="text" id="perc_${i}" readonly></td></tr>`;
+        });
+        document.getElementById('edu-body').innerHTML = html;
+      }
+
+      function calcPerc(i) {
+        const fm = parseFloat(document.getElementById(`fm_${i}`).value);
+        const obt = parseFloat(document.getElementById(`obt_${i}`).value);
+        if(fm && obt) document.getElementById(`perc_${i}`).value = ((obt/fm)*100).toFixed(2) + '%';
+      }
+
+      function processFile(input, hiddenId) {
+        const file = input.files[0];
+        if(!file || file.size > 4*1024*1024) { alert("File too large (Max 4MB)!"); input.value = ""; return; }
+        const reader = new FileReader();
+        reader.onload = e => document.getElementById(hiddenId).value = e.target.result;
+        reader.readAsDataURL(file);
+      }
+
+      function handleFormSubmit(e) {
+        e.preventDefault();
+        document.getElementById('loader').style.display = 'flex';
+        
+        // Collect Data
+        let formData = {
+          fullName: document.getElementById('fullName').value,
+          fatherName: document.getElementById('fatherName').value,
+          motherName: document.getElementById('motherName').value,
+          address: document.getElementById('address').value,
+          phone: document.getElementById('phone').value,
+          email: document.getElementById('email').value,
+          photoData: document.getElementById('photoData').value,
+          idData: document.getElementById('idData').value,
+          qualData: document.getElementById('qualData').value
+        };
+        for(let i=0; i<5; i++) {
+          formData[`exam_${i}`] = document.getElementById(`exam_${i}`).value;
+          formData[`year_${i}`] = document.getElementById(`year_${i}`).value;
+          formData[`board_${i}`] = document.getElementById(`board_${i}`).value;
+          formData[`fm_${i}`] = document.getElementById(`fm_${i}`).value;
+          formData[`obt_${i}`] = document.getElementById(`obt_${i}`).value;
+          formData[`perc_${i}`] = document.getElementById(`perc_${i}`).value;
+        }
+
+        // Send to Apps Script via fetch (POST)
+        fetch(WEBAPP_URL, {
+          method: "POST",
+          body: JSON.stringify(formData)
+          // Note: We use text/plain implicitly to avoid CORS Preflight failure on Apps Script
+        })
+        .then(res => res.json())
+        .then(data => {
+          if(data.status === 'success') {
+            fillPrintLayout(data);
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('main-form-container').style.display = 'none';
+            document.getElementById('print-layout').style.display = 'block';
+            document.getElementById('action-bar').style.display = 'block';
+          } else {
+            alert("Error: " + data.message);
+            document.getElementById('loader').style.display = 'none';
+          }
+        })
+        .catch(err => {
+          alert("Network Error: " + err);
+          document.getElementById('loader').style.display = 'none';
+        });
+      }
+
+      function fillPrintLayout(res) {
+        document.getElementById('print-date').innerText = new Date().toLocaleDateString();
+        document.getElementById('p-name').innerText = document.getElementById('fullName').value;
+        document.getElementById('p-father').innerText = document.getElementById('fatherName').value;
+        document.getElementById('p-mother').innerText = document.getElementById('motherName').value;
+        document.getElementById('p-address').innerText = document.getElementById('address').value;
+        document.getElementById('p-contact').innerText = document.getElementById('phone').value + " | " + document.getElementById('email').value;
+        document.getElementById('print-photo-img').src = "data:image/jpeg;base64," + document.getElementById('photoData').value.split(',')[1];
+        
+        let tableHtml = "";
+        for(let i=0; i<5; i++) {
+           if(document.getElementById(`year_${i}`).value) {
+             tableHtml += `<tr><td>${document.getElementById(`exam_${i}`).value}</td><td>${document.getElementById(`year_${i}`).value}</td><td>${document.getElementById(`board_${i}`).value}</td><td>${document.getElementById(`fm_${i}`).value}</td><td>${document.getElementById(`obt_${i}`).value}</td><td>${document.getElementById(`perc_${i}`).value}</td></tr>`;
+           }
+        }
+        document.getElementById('p-edu-body').innerHTML = tableHtml;
+        const qrBase = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=";
+        document.getElementById('qr-id').src = qrBase + encodeURIComponent(res.idUrl);
+        document.getElementById('qr-qual').src = qrBase + encodeURIComponent(res.qualUrl);
+        document.getElementById('qr-app').src = qrBase + encodeURIComponent(res.pdfUrl);
+      }
+    </script>
+  </body>
+</html>
