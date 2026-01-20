@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Biodata Builder</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --bg-color: #f4f7f6;
+            --border-color: #ddd;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+
+        /* Layout: Split Screen */
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Left Side: The Form */
+        .editor-section {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Right Side: The Preview */
+        .preview-section {
+            flex: 1;
+            background: white;
+            padding: 40px; /* A4 padding */
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            height: 90vh;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+        }
+
+        /* Form Styling */
+        h2 { text-align: center; color: var(--primary-color); }
+        
+        fieldset {
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+
+        legend {
+            font-weight: bold;
+            color: var(--accent-color);
+            padding: 0 10px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        input[type="text"], input[type="email"], input[type="date"], 
+        input[type="tel"], input[type="number"], textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Fixes padding issues */
+        }
+
+        textarea { resize: vertical; }
+
+        /* Table Styling within Form */
+        .input-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        .input-table th, .input-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .input-table th { background-color: #f8f9fa; }
+        .input-table input { border: 1px solid transparent; background: transparent; }
+        .input-table input:focus { border: 1px solid var(--accent-color); background: #fff; }
+
+        /* --- RESUME PREVIEW STYLING --- */
+        #resume-preview {
+            font-family: 'Times New Roman', Times, serif;
+            color: #000;
+            line-height: 1.4;
+        }
+
+        .resume-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #000;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header-text h1 { margin: 0; font-size: 24px; text-transform: uppercase; }
+        .header-text p { margin: 2px 0; }
+
+        .profile-pic-container {
+            width: 120px;
+            height: 140px;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #eee;
+            overflow: hidden;
+        }
+
+        .profile-pic-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none; /* Hidden until uploaded */
+        }
+
+        .resume-section { margin-bottom: 20px; }
+        .resume-section h3 {
+            background-color: #e0e0e0;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            text-transform: uppercase;
+            border-left: 5px solid #333;
+        }
+
+        .resume-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .resume-table th, .resume-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+        }
+        .resume-table th { background-color: #f0f0f0; font-weight: bold; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .info-label { font-weight: bold; }
+
+        /* PRINT MEDIA QUERY */
+        @media print {
+            body { padding: 0; background: white; }
+            .editor-section { display: none; } /* Hide Form */
+            .preview-section { 
+                flex: none; 
+                width: 100%; 
+                border: none; 
+                box-shadow: none; 
+                height: auto;
+                overflow: visible;
+                padding: 0;
+            }
+            .main-container { display: block; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+
+    <div class="editor-section">
+        <h2>Biodata Entry Form</h2>
+        <form id="resumeForm">
+            
+            <fieldset>
+                <legend>Personal Information</legend>
+                
+                <div class="form-group">
+                    <label for="profile_image">Profile Picture</label>
+                    <input type="file" id="profile_image" accept="image/*" onchange="previewImage(this)">
+                </div>
+
+                <div class="form-group">
+                    <label for="name">Full Name</label>
+                    <input type="text" id="name" placeholder="Full Name" oninput="syncText('name', 'p-name')">
+                </div>
+                
+                <div class="form-group">
+                    <label for="profession">Profession / Title</label>
+                    <input type="text" id="profession" placeholder="e.g. Assistant Teacher" oninput="syncText('profession', 'p-profession')">
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" oninput="syncText('email', 'p-email')">
+                </div>
+
+                <div class="form-group">
+                    <label for="contact">Contact Number</label>
+                    <input type="tel" id="contact" oninput="syncText('contact', 'p-contact')">
+                </div>
+
+                <div class="form-group">
+                    <label for="father_name">Father's Name</label>
+                    <input type="text" id="father_name" oninput="syncText('father_name', 'p-father')">
+                </div>
+
+                <div class="form-group">
+                    <label for="mother_name">Mother's Name</label>
+                    <input type="text" id="mother_name" oninput="syncText('mother_name', 'p-mother')">
+                </div>
+
+                <div class="form-group">
+                    <label for="date_o_b">Date of Birth</label>
+                    <input type="date" id="date_o_b" oninput="syncText('date_o_b', 'p-dob')">
+                </div>
+
+                <div class="form-group">
+                    <label for="specialization">Specialization</label>
+                    <input list="specialization-options" id="specialization" oninput="syncText('specialization', 'p-spec')">
+                    <datalist id="specialization-options">
+                        <option value="Bengali">
+                        <option value="English">
+                        <option value="Mathematics">
+                        <option value="History">
+                        <option value="Geography">
+                        <option value="Life Science">
+                        <option value="Computer Science">
+                    </datalist>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Career Objective</legend>
+                <textarea id="career-objective" rows="4" oninput="syncText('career-objective', 'p-objective')">To secure a challenging position in a professional environment where I can utilize my academic knowledge and skills to contribute to the growth of the organization while further developing my professional abilities.</textarea>
+            </fieldset>
+
+            <fieldset>
+                <legend>Academic Record</legend>
+                <table class="input-table">
+                    <thead>
+                        <tr>
+                            <th>Exam</th>
+                            <th>Year</th>
+                            <th>Total</th>
+                            <th>Obtained</th>
+                            <th>%</th>
+                            <th>Subject</th>
+                        </tr>
+                    </thead>
+                    <tbody id="academic-body">
+                        <tr>
+                            <td><strong>10th</strong></td>
+                            <td><input type="number" id="y10" oninput="syncTable('y10', 'py10')"></td>
+                            <td><input type="number" id="t10" oninput="calcPercent('t10', 'o10', 'per10')"></td>
+                            <td><input type="number" id="o10" oninput="calcPercent('t10', 'o10', 'per10'); syncTable('o10', 'po10')"></td>
+                            <td><input type="text" id="per10" readonly onchange="syncTable('per10', 'pper10')"></td>
+                            <td><input type="text" id="s10" oninput="syncTable('s10', 'ps10')"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>12th</strong></td>
+                            <td><input type="number" id="y12" oninput="syncTable('y12', 'py12')"></td>
+                            <td><input type="number" id="t12" oninput="calcPercent('t12', 'o12', 'per12')"></td>
+                            <td><input type="number" id="o12" oninput="calcPercent('t12', 'o12', 'per12'); syncTable('o12', 'po12')"></td>
+                            <td><input type="text" id="per12" readonly></td>
+                            <td><input type="text" id="s12" oninput="syncTable('s12', 'ps12')"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Grad.</strong></td>
+                            <td><input type="number" id="yG" oninput="syncTable('yG', 'pyG')"></td>
+                            <td><input type="number" id="tG" oninput="calcPercent('tG', 'oG', 'perG')"></td>
+                            <td><input type="number" id="oG" oninput="calcPercent('tG', 'oG', 'perG'); syncTable('oG', 'poG')"></td>
+                            <td><input type="text" id="perG" readonly></td>
+                            <td><input type="text" id="sG" oninput="syncTable('sG', 'psG')"></td>
+                        </tr>
+                        <tr>
+                            <td><strong>M.A/M.Sc</strong></td>
+                            <td><input type="number" id="yM" oninput="syncTable('yM', 'pyM')"></td>
+                            <td><input type="number" id="tM" oninput="calcPercent('tM', 'oM', 'perM')"></td>
+                            <td><input type="number" id="oM" oninput="calcPercent('tM', 'oM', 'perM'); syncTable('oM', 'poM')"></td>
+                            <td><input type="text" id="perM" readonly></td>
+                            <td><input type="text" id="sM" oninput="syncTable('sM', 'psM')"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </fieldset>
+
+            <fieldset>
+                <legend>Work Experience</legend>
+                <div class="form-group">
+                    <label>Job 1</label>
+                    <input type="text" placeholder="Organization" id="org1" oninput="syncTable('org1', 'porg1')">
+                    <input type="text" placeholder="Position" id="pos1" style="margin-top:5px;" oninput="syncTable('pos1', 'ppos1')">
+                    <input type="text" placeholder="Duration (e.g. 2018-2020)" id="dur1" style="margin-top:5px;" oninput="syncTable('dur1', 'pdur1')">
+                </div>
+                <div class="form-group">
+                    <label>Job 2</label>
+                    <input type="text" placeholder="Organization" id="org2" oninput="syncTable('org2', 'porg2')">
+                    <input type="text" placeholder="Position" id="pos2" style="margin-top:5px;" oninput="syncTable('pos2', 'ppos2')">
+                    <input type="text" placeholder="Duration" id="dur2" style="margin-top:5px;" oninput="syncTable('dur2', 'pdur2')">
+                </div>
+            </fieldset>
+            
+            <button type="button" onclick="window.print()" style="width: 100%; padding: 15px; background: var(--accent-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1.1em;">Print Resume</button>
+        </form>
+    </div>
+
+    <div class="preview-section">
+        <div id="resume-preview">
+            
+            <div class="resume-header">
+                <div class="header-text">
+                    <h1 id="p-name">Your Name</h1>
+                    <p style="font-weight: bold; color: #555;" id="p-profession">Profession</p>
+                    <p>Email: <span id="p-email"></span></p>
+                    <p>Contact: <span id="p-contact"></span></p>
+                </div>
+                <div class="profile-pic-container">
+                    <img id="p-image-preview" src="" alt="Profile">
+                    <span id="img-placeholder" style="color:#aaa; font-size: 12px; text-align: center;">Photo</span>
+                </div>
+            </div>
+
+            <div class="resume-section">
+                <h3>Career Objective</h3>
+                <p id="p-objective" style="text-align: justify;">To secure a challenging position...</p>
+            </div>
+
+            <div class="resume-section">
+                <h3>Personal Profile</h3>
+                <div class="info-grid">
+                    <div class="info-label">Date of Birth:</div>
+                    <div id="p-dob"></div>
+                    <div class="info-label">Father's Name:</div>
+                    <div id="p-father"></div>
+                    <div class="info-label">Mother's Name:</div>
+                    <div id="p-mother"></div>
+                    <div class="info-label">Specialization:</div>
+                    <div id="p-spec"></div>
+                </div>
+            </div>
+
+            <div class="resume-section">
+                <h3>Academic Qualifications</h3>
+                <table class="resume-table">
+                    <thead>
+                        <tr>
+                            <th>Exam</th>
+                            <th>Year</th>
+                            <th>Board/Sub</th>
+                            <th>Marks Obtained</th>
+                            <th>Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Madhyamik</td>
+                            <td id="py10"></td>
+                            <td id="ps10"></td>
+                            <td id="po10"></td>
+                            <td id="pper10"></td>
+                        </tr>
+                        <tr>
+                            <td>Higher Secondary</td>
+                            <td id="py12"></td>
+                            <td id="ps12"></td>
+                            <td id="po12"></td>
+                            <td id="pper12"></td>
+                        </tr>
+                        <tr>
+                            <td>Graduation</td>
+                            <td id="pyG"></td>
+                            <td id="psG"></td>
+                            <td id="poG"></td>
+                            <td id="pperG"></td>
+                        </tr>
+                        <tr>
+                            <td>Masters</td>
+                            <td id="pyM"></td>
+                            <td id="psM"></td>
+                            <td id="poM"></td>
+                            <td id="pperM"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="resume-section">
+                <h3>Work Experience</h3>
+                <table class="resume-table">
+                    <thead>
+                        <tr>
+                            <th>Organization</th>
+                            <th>Position</th>
+                            <th>Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td id="porg1"></td>
+                            <td id="ppos1"></td>
+                            <td id="pdur1"></td>
+                        </tr>
+                        <tr>
+                            <td id="porg2"></td>
+                            <td id="ppos2"></td>
+                            <td id="pdur2"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. Function to Sync Text Inputs
+    function syncText(inputId, previewId) {
+        const inputVal = document.getElementById(inputId).value;
+        document.getElementById(previewId).textContent = inputVal;
+    }
+
+    // 2. Function to Sync Table Data (Allows keeping IDs shorter)
+    function syncTable(inputId, previewId) {
+        const inputVal = document.getElementById(inputId).value;
+        document.getElementById(previewId).textContent = inputVal;
+    }
+
+    // 3. Function to Calculate Percentage
+    function calcPercent(totalId, obtainedId, outputId) {
+        const total = parseFloat(document.getElementById(totalId).value);
+        const obtained = parseFloat(document.getElementById(obtainedId).value);
+        const outputField = document.getElementById(outputId);
+        
+        // Construct the preview ID (standardized naming convention for this code: 'p' + outputId)
+        const previewFieldId = 'p' + outputId; 
+        const previewField = document.getElementById(previewFieldId);
+
+        if(total && obtained) {
+            const percent = ((obtained / total) * 100).toFixed(2) + "%";
+            outputField.value = percent;
+            if(previewField) previewField.textContent = percent;
+        } else {
+            outputField.value = "";
+            if(previewField) previewField.textContent = "";
+        }
+    }
+
+    // 4. Function to Handle Image Upload
+    function previewImage(input) {
+        const preview = document.getElementById('p-image-preview');
+        const placeholder = document.getElementById('img-placeholder');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+            }
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    // Initialize Default Values on Load (Optional)
+    window.onload = function() {
+        // Trigger specific syncs if needed, or leave blank to start fresh
+        syncText('career-objective', 'p-objective');
+    };
+</script>
+
+</body>
+</html>
